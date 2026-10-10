@@ -253,8 +253,8 @@ int main()
         cout << "1. Add Student\n";
         cout << "2. Show All Students\n";
         cout << "3. Search Student\n";
-        cout << "5. Delete Student\n";
-        cout << "8. Exit\n";
+        cout << "4. Delete Student\n";
+        cout << "5. Exit\n";
         cout << "Choose option: ";
 
         int ch;
@@ -278,10 +278,10 @@ int main()
         case 3:
             M.searchStudent();
             break;
-        case 5:
+        case 4:
             M.deleteStudent();
             break;
-        case 8:
+        case 5:
             M.saveOnExit();
             cout << "Saved and exiting.\n";
             return 0;
