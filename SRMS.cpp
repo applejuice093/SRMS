@@ -174,7 +174,7 @@ public:
              << setw(20) << "Name"
              << setw(6) << "Age"
              << setw(15) << "Major"
-             << setw(6) << "GPA\n";
+             << "GPA" << "\n";
         cout << "---------------------------------------------------------------\n";
         for (const auto &s : list)
             s.display();
