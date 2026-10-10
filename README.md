@@ -47,7 +47,7 @@ make test
 ```
 
 This runs `tests/smoke_test.sh`, which drives the menu through stdin in a temporary
-folder and checks the saved file. GitHub Actions runs it on every push.
+folder and checks the saved file.
 
 ## Project files
 
