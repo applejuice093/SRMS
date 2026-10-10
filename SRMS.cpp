@@ -187,14 +187,7 @@ public:
     void searchStudent() const
     {
         cout << "Enter ID to search: ";
-        int id;
-        while (!(cin >> id))
-        {
-            cin.clear();
-            cin.ignore(numeric_limits<streamsize>::max(), '\n');
-            cout << "Invalid! Enter numeric ID: ";
-        }
-        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        int id = readNumber<int>("Invalid! Enter numeric ID: ");
 
         int idx = findIndex(id);
         if (idx == -1)
@@ -211,14 +204,7 @@ public:
     void deleteStudent()
     {
         cout << "Enter ID to delete: ";
-        int id;
-        while (!(cin >> id))
-        {
-            cin.clear();
-            cin.ignore(numeric_limits<streamsize>::max(), '\n');
-            cout << "Invalid! Enter numeric ID: ";
-        }
-        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        int id = readNumber<int>("Invalid! Enter numeric ID: ");
 
         int idx = findIndex(id);
         if (idx == -1)
