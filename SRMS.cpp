@@ -48,12 +48,22 @@ public:
 
         cout << "Enter Name: ";
         getline(cin, name);
+        while (name.empty() || name.find('|') != string::npos)
+        {
+            cout << "Name must be non-empty and cannot contain '|': ";
+            getline(cin, name);
+        }
 
         cout << "Enter Age (number): ";
         age = readNumber<int>("Invalid! Enter numeric age: ");
 
         cout << "Enter Major: ";
         getline(cin, major);
+        while (major.empty() || major.find('|') != string::npos)
+        {
+            cout << "Major must be non-empty and cannot contain '|': ";
+            getline(cin, major);
+        }
 
         cout << "Enter GPA (number): ";
         gpa = readNumber<double>("Invalid! Enter numeric GPA: ");
