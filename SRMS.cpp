@@ -250,6 +250,12 @@ int main()
         int ch;
         if (!(cin >> ch))
         {
+            if (cin.eof())
+            {
+                M.saveOnExit();
+                cout << "\nInput closed. Saved and exiting.\n";
+                return 0;
+            }
             cin.clear();
             cin.ignore(numeric_limits<streamsize>::max(), '\n');
             cout << "Invalid choice!\n";
