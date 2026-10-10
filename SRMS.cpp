@@ -5,8 +5,30 @@
 #include <fstream>
 #include <sstream>
 #include <limits>
+#include <cstdlib>
 
 using namespace std;
+
+// Reads a number from stdin, re-prompting until the input is valid.
+// Exits cleanly if stdin is closed so the program never spins forever.
+template <typename T>
+T readNumber(const string &retryPrompt)
+{
+    T value;
+    while (!(cin >> value))
+    {
+        if (cin.eof())
+        {
+            cout << "\nInput closed. Exiting.\n";
+            exit(0);
+        }
+        cin.clear();
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        cout << retryPrompt;
+    }
+    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+    return value;
+}
 
 class Student
 {
