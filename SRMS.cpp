@@ -56,6 +56,8 @@ public:
 
         cout << "Enter Age (number): ";
         age = readNumber<int>("Invalid! Enter numeric age: ");
+        while (age <= 0 || age > 120)
+            age = readNumber<int>("Age must be between 1 and 120: ");
 
         cout << "Enter Major: ";
         getline(cin, major);
@@ -67,6 +69,8 @@ public:
 
         cout << "Enter GPA (number): ";
         gpa = readNumber<double>("Invalid! Enter numeric GPA: ");
+        while (gpa < 0.0 || gpa > 10.0)
+            gpa = readNumber<double>("GPA must be between 0 and 10: ");
     }
 
     void display() const
