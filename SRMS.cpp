@@ -89,6 +89,7 @@ public:
         return oss.str();
     }
 
+    // Parses one "id|name|age|major|gpa" line; returns false if malformed.
     static bool fromLine(const string &line, Student &s)
     {
         stringstream ss(line);
@@ -118,6 +119,7 @@ class StudentManager
 {
     vector<Student> list;
 
+    // Returns the position of the student with this ID, or -1 if absent.
     int findIndex(int id) const
     {
         for (int i = 0; i < (int)list.size(); ++i)
@@ -125,6 +127,8 @@ class StudentManager
                 return i;
         return -1;
     }
+    // Rewrites students.txt from the in-memory list (one record per line,
+    // fields separated by '|': id|name|age|major|gpa).
     void saveAllToFile() const
     {
         ofstream out("students.txt", ios::trunc);
