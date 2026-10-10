@@ -5,8 +5,30 @@
 #include <fstream>
 #include <sstream>
 #include <limits>
+#include <cstdlib>
 
 using namespace std;
+
+// Reads a number from stdin, re-prompting until the input is valid.
+// Exits cleanly if stdin is closed so the program never spins forever.
+template <typename T>
+T readNumber(const string &retryPrompt)
+{
+    T value;
+    while (!(cin >> value))
+    {
+        if (cin.eof())
+        {
+            cout << "\nInput closed. Exiting.\n";
+            exit(0);
+        }
+        cin.clear();
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        cout << retryPrompt;
+    }
+    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+    return value;
+}
 
 class Student
 {
@@ -17,42 +39,56 @@ public:
     string major;
     double gpa = 0.0;
 
-    void input()
+    void input(const vector<Student> &existing)
     {
         cout << "\n--- Enter Student Details ---\n";
 
         cout << "Enter ID (number): ";
-        while (!(cin >> id))
+        id = readNumber<int>("Invalid input! Enter numeric ID: ");
+        for (bool clash = true; clash;)
         {
-            cin.clear();
-            cin.ignore(numeric_limits<streamsize>::max(), '\n');
-            cout << "Invalid input! Enter numeric ID: ";
+            clash = false;
+            for (const auto &other : existing)
+                if (other.id == id)
+                    clash = true;
+            if (clash)
+                {
+                cout << "That ID already exists. Enter a different ID: ";
+                id = readNumber<int>("Invalid! Enter a number: ");
+            }
         }
-        cin.ignore(numeric_limits<streamsize>::max(), '\n');
 
         cout << "Enter Name: ";
         getline(cin, name);
+        while (name.empty() || name.find('|') != string::npos)
+        {
+            cout << "Name must be non-empty and cannot contain '|': ";
+            getline(cin, name);
+        }
 
         cout << "Enter Age (number): ";
-        while (!(cin >> age))
-        {
-            cin.clear();
-            cin.ignore(numeric_limits<streamsize>::max(), '\n');
-            cout << "Invalid! Enter numeric age: ";
-        }
-        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        age = readNumber<int>("Invalid! Enter numeric age: ");
+        while (age <= 0 || age > 120)
+            {
+                cout << "Age must be between 1 and 120: ";
+                age = readNumber<int>("Invalid! Enter a number: ");
+            }
 
         cout << "Enter Major: ";
         getline(cin, major);
+        while (major.empty() || major.find('|') != string::npos)
+        {
+            cout << "Major must be non-empty and cannot contain '|': ";
+            getline(cin, major);
+        }
 
         cout << "Enter GPA (number): ";
-        while (!(cin >> gpa))
-        {
-            cin.clear();
-            cin.ignore(numeric_limits<streamsize>::max(), '\n');
-            cout << "Invalid! Enter numeric GPA: ";
-        }
-        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        gpa = readNumber<double>("Invalid! Enter numeric GPA: ");
+        while (gpa < 0.0 || gpa > 10.0)
+            {
+                cout << "GPA must be between 0 and 10: ";
+                gpa = readNumber<double>("Invalid! Enter a number: ");
+            }
     }
 
     void display() const
@@ -71,6 +107,7 @@ public:
         return oss.str();
     }
 
+    // Parses one "id|name|age|major|gpa" line; returns false if malformed.
     static bool fromLine(const string &line, Student &s)
     {
         stringstream ss(line);
@@ -100,6 +137,7 @@ class StudentManager
 {
     vector<Student> list;
 
+    // Returns the position of the student with this ID, or -1 if absent.
     int findIndex(int id) const
     {
         for (int i = 0; i < (int)list.size(); ++i)
@@ -107,6 +145,8 @@ class StudentManager
                 return i;
         return -1;
     }
+    // Rewrites students.txt from the in-memory list (one record per line,
+    // fields separated by '|': id|name|age|major|gpa).
     void saveAllToFile() const
     {
         ofstream out("students.txt", ios::trunc);
@@ -142,13 +182,7 @@ public:
     void addStudent()
     {
         Student s;
-        s.input();
-
-        if (findIndex(s.id) != -1)
-        {
-            cout << "ID already exists. Add aborted.\n";
-            return;
-        }
+        s.input(list);
 
         list.push_back(s);
 
@@ -174,7 +208,7 @@ public:
              << setw(20) << "Name"
              << setw(6) << "Age"
              << setw(15) << "Major"
-             << setw(6) << "GPA\n";
+             << "GPA" << "\n";
         cout << "---------------------------------------------------------------\n";
         for (const auto &s : list)
             s.display();
@@ -183,14 +217,7 @@ public:
     void searchStudent() const
     {
         cout << "Enter ID to search: ";
-        int id;
-        while (!(cin >> id))
-        {
-            cin.clear();
-            cin.ignore(numeric_limits<streamsize>::max(), '\n');
-            cout << "Invalid! Enter numeric ID: ";
-        }
-        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        int id = readNumber<int>("Invalid! Enter numeric ID: ");
 
         int idx = findIndex(id);
         if (idx == -1)
@@ -207,14 +234,7 @@ public:
     void deleteStudent()
     {
         cout << "Enter ID to delete: ";
-        int id;
-        while (!(cin >> id))
-        {
-            cin.clear();
-            cin.ignore(numeric_limits<streamsize>::max(), '\n');
-            cout << "Invalid! Enter numeric ID: ";
-        }
-        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        int id = readNumber<int>("Invalid! Enter numeric ID: ");
 
         int idx = findIndex(id);
         if (idx == -1)
@@ -253,13 +273,19 @@ int main()
         cout << "1. Add Student\n";
         cout << "2. Show All Students\n";
         cout << "3. Search Student\n";
-        cout << "5. Delete Student\n";
-        cout << "8. Exit\n";
+        cout << "4. Delete Student\n";
+        cout << "5. Exit\n";
         cout << "Choose option: ";
 
         int ch;
         if (!(cin >> ch))
         {
+            if (cin.eof())
+            {
+                M.saveOnExit();
+                cout << "\nInput closed. Saved and exiting.\n";
+                return 0;
+            }
             cin.clear();
             cin.ignore(numeric_limits<streamsize>::max(), '\n');
             cout << "Invalid choice!\n";
@@ -278,10 +304,10 @@ int main()
         case 3:
             M.searchStudent();
             break;
-        case 5:
+        case 4:
             M.deleteStudent();
             break;
-        case 8:
+        case 5:
             M.saveOnExit();
             cout << "Saved and exiting.\n";
             return 0;
