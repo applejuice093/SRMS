@@ -44,37 +44,19 @@ public:
         cout << "\n--- Enter Student Details ---\n";
 
         cout << "Enter ID (number): ";
-        while (!(cin >> id))
-        {
-            cin.clear();
-            cin.ignore(numeric_limits<streamsize>::max(), '\n');
-            cout << "Invalid input! Enter numeric ID: ";
-        }
-        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        id = readNumber<int>("Invalid input! Enter numeric ID: ");
 
         cout << "Enter Name: ";
         getline(cin, name);
 
         cout << "Enter Age (number): ";
-        while (!(cin >> age))
-        {
-            cin.clear();
-            cin.ignore(numeric_limits<streamsize>::max(), '\n');
-            cout << "Invalid! Enter numeric age: ";
-        }
-        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        age = readNumber<int>("Invalid! Enter numeric age: ");
 
         cout << "Enter Major: ";
         getline(cin, major);
 
         cout << "Enter GPA (number): ";
-        while (!(cin >> gpa))
-        {
-            cin.clear();
-            cin.ignore(numeric_limits<streamsize>::max(), '\n');
-            cout << "Invalid! Enter numeric GPA: ";
-        }
-        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        gpa = readNumber<double>("Invalid! Enter numeric GPA: ");
     }
 
     void display() const
