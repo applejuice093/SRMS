@@ -39,12 +39,21 @@ public:
     string major;
     double gpa = 0.0;
 
-    void input()
+    void input(const vector<Student> &existing)
     {
         cout << "\n--- Enter Student Details ---\n";
 
         cout << "Enter ID (number): ";
         id = readNumber<int>("Invalid input! Enter numeric ID: ");
+        for (bool clash = true; clash;)
+        {
+            clash = false;
+            for (const auto &other : existing)
+                if (other.id == id)
+                    clash = true;
+            if (clash)
+                id = readNumber<int>("That ID already exists. Enter a different ID: ");
+        }
 
         cout << "Enter Name: ";
         getline(cin, name);
@@ -164,13 +173,7 @@ public:
     void addStudent()
     {
         Student s;
-        s.input();
-
-        if (findIndex(s.id) != -1)
-        {
-            cout << "ID already exists. Add aborted.\n";
-            return;
-        }
+        s.input(list);
 
         list.push_back(s);
 
