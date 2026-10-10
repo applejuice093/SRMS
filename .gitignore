@@ -1,0 +1,8 @@
+# Build outputs
+*.exe
+*.o
+*.out
+SRMS
+
+# Runtime data created by the app
+students.txt
