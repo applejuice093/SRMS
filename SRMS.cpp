@@ -9,6 +9,19 @@
 
 using namespace std;
 
+// Reads one line from stdin. Exits cleanly if stdin is closed, so prompts
+// that loop until they get valid text can never spin forever on EOF.
+string readLine()
+{
+    string line;
+    if (!getline(cin, line))
+    {
+        cout << "\nInput closed. Exiting.\n";
+        exit(0);
+    }
+    return line;
+}
+
 // Reads a number from stdin, re-prompting until the input is valid.
 // Exits cleanly if stdin is closed so the program never spins forever.
 template <typename T>
@@ -59,11 +72,11 @@ public:
         }
 
         cout << "Enter Name: ";
-        getline(cin, name);
+        name = readLine();
         while (name.empty() || name.find('|') != string::npos)
         {
             cout << "Name must be non-empty and cannot contain '|': ";
-            getline(cin, name);
+            name = readLine();
         }
 
         cout << "Enter Age (number): ";
@@ -75,11 +88,11 @@ public:
             }
 
         cout << "Enter Major: ";
-        getline(cin, major);
+        major = readLine();
         while (major.empty() || major.find('|') != string::npos)
         {
             cout << "Major must be non-empty and cannot contain '|': ";
-            getline(cin, major);
+            major = readLine();
         }
 
         cout << "Enter GPA (number): ";
