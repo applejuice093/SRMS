@@ -206,6 +206,9 @@ class StudentManager
     }
 
 public:
+    // Loads students.txt. Lines that are malformed or repeat an earlier ID
+    // are skipped with a warning; because the next save rewrites the file,
+    // the original is first copied to students.txt.bak so nothing is lost.
     void loadFromFile()
     {
         list.clear();
@@ -215,13 +218,34 @@ public:
             return;
         }
         string line;
+        vector<int> skipped;
+        int lineNo = 0;
         while (getline(in, line))
         {
-            if (line.empty())
+            ++lineNo;
+            if (trim(line).empty())
                 continue;
             Student s;
-            if (Student::fromLine(line, s))
+            if (Student::fromLine(line, s) && findIndex(s.id) == -1)
                 list.push_back(s);
+            else
+                skipped.push_back(lineNo);
+        }
+        in.close();
+
+        if (!skipped.empty())
+        {
+            cout << "Warning: skipped " << skipped.size()
+                 << " invalid or duplicate line(s) in students.txt (line numbers:";
+            for (int n : skipped)
+                cout << ' ' << n;
+            cout << ").\n";
+            ifstream src("students.txt", ios::binary);
+            ofstream bak("students.txt.bak", ios::binary | ios::trunc);
+            if (src && bak && (bak << src.rdbuf()))
+                cout << "The original file was copied to students.txt.bak.\n";
+            else
+                cout << "Warning: could not create students.txt.bak.\n";
         }
     }
 
