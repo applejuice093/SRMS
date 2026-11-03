@@ -147,8 +147,14 @@ public:
     }
 
     // Parses one "id|name|age|major|gpa" line; returns false if malformed.
-    static bool fromLine(const string &line, Student &s)
+    // Applies the same rules as interactive input, so a hand-edited file
+    // can't load records the menu would have refused (e.g. GPA 42, age "2x").
+    // A trailing '\r' from files saved on Windows is ignored.
+    static bool fromLine(const string &rawLine, Student &s)
     {
+        string line = rawLine;
+        if (!line.empty() && line.back() == '\r')
+            line.pop_back();
         stringstream ss(line);
         string part;
         vector<string> parts;
@@ -156,18 +162,19 @@ public:
             parts.push_back(part);
         if (parts.size() != 5)
             return false;
-        try
-        {
-            s.id = stoi(parts[0]);
-            s.name = parts[1];
-            s.age = stoi(parts[2]);
-            s.major = parts[3];
-            s.gpa = stod(parts[4]);
-        }
-        catch (...)
-        {
+
+        Student parsed;
+        parsed.name = trim(parts[1]);
+        parsed.major = trim(parts[3]);
+        if (!parseNumber(parts[0], parsed.id) || parsed.id <= 0)
             return false;
-        }
+        if (!parseNumber(parts[2], parsed.age) || parsed.age <= 0 || parsed.age > 120)
+            return false;
+        if (!parseNumber(parts[4], parsed.gpa) || parsed.gpa < 0.0 || parsed.gpa > 10.0)
+            return false;
+        if (parsed.name.empty() || parsed.major.empty())
+            return false;
+        s = parsed;
         return true;
     }
 };
