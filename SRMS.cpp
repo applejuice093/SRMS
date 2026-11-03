@@ -296,21 +296,19 @@ int main()
         cout << "5. Exit\n";
         cout << "Choose option: ";
 
-        int ch;
-        if (!(cin >> ch))
+        string choice;
+        if (!getline(cin, choice))
         {
-            if (cin.eof())
-            {
-                M.saveOnExit();
-                cout << "\nInput closed. Saved and exiting.\n";
-                return 0;
-            }
-            cin.clear();
-            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            M.saveOnExit();
+            cout << "\nInput closed. Saved and exiting.\n";
+            return 0;
+        }
+        int ch = 0;
+        if (!parseNumber(choice, ch))
+        {
             cout << "Invalid choice!\n";
             continue;
         }
-        cin.ignore(numeric_limits<streamsize>::max(), '\n');
 
         switch (ch)
         {
