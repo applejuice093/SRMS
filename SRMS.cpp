@@ -204,6 +204,16 @@ class StudentManager
                 return i;
         return -1;
     }
+    static void printTableHeader()
+    {
+        cout << left << setw(6) << "ID"
+             << setw(20) << "Name"
+             << setw(6) << "Age"
+             << setw(15) << "Major"
+             << "GPA" << "\n";
+        cout << "---------------------------------------------------------------\n";
+    }
+
     // Rewrites students.txt from the in-memory list (one record per line,
     // fields separated by '|': id|name|age|major|gpa).
     // Writes to students.txt.tmp first and then renames it over the real
@@ -305,12 +315,7 @@ public:
             return;
         }
         cout << "\n--- Student Records ---\n";
-        cout << left << setw(6) << "ID"
-             << setw(20) << "Name"
-             << setw(6) << "Age"
-             << setw(15) << "Major"
-             << "GPA" << "\n";
-        cout << "---------------------------------------------------------------\n";
+        printTableHeader();
         for (const auto &s : list)
             s.display();
         cout << list.size() << " record(s).\n";
@@ -329,6 +334,7 @@ public:
         else
         {
             cout << "\n--- Student Found ---\n";
+            printTableHeader();
             list[idx].display();
         }
     }
