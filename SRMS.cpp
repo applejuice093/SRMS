@@ -6,27 +6,71 @@
 #include <sstream>
 #include <limits>
 #include <cstdlib>
+#include <cstdio>
 
 using namespace std;
 
-// Reads a number from stdin, re-prompting until the input is valid.
-// Exits cleanly if stdin is closed so the program never spins forever.
+// Reads one line from stdin. Exits cleanly if stdin is closed, so prompts
+// that loop until they get valid text can never spin forever on EOF.
+string readLine()
+{
+    string line;
+    if (!getline(cin, line))
+    {
+        cout << "\nInput closed. Exiting.\n";
+        exit(0);
+    }
+    return line;
+}
+
+// Returns `text` without leading or trailing spaces, tabs or CR/LF.
+string trim(const string &text)
+{
+    const char *space = " \t\r\n";
+    size_t start = text.find_first_not_of(space);
+    if (start == string::npos)
+        return "";
+    size_t end = text.find_last_not_of(space);
+    return text.substr(start, end - start + 1);
+}
+
+// Reads a non-empty text field that is safe to store in the '|'-separated
+// file. Surrounding whitespace is trimmed so "  Asha  " is saved as "Asha".
+string readTextField(const string &fieldName)
+{
+    string value = trim(readLine());
+    while (value.empty() || value.find('|') != string::npos)
+    {
+        cout << fieldName << " must be non-empty and cannot contain '|': ";
+        value = trim(readLine());
+    }
+    return value;
+}
+
+// Parses the whole of `text` as a T, allowing surrounding spaces only.
+// "12abc", "1.5" (for an int) and "" are rejected instead of half-read.
+template <typename T>
+bool parseNumber(const string &text, T &value)
+{
+    istringstream iss(text);
+    T parsed;
+    if (!(iss >> parsed))
+        return false;
+    iss >> ws;
+    if (!iss.eof())
+        return false;
+    value = parsed;
+    return true;
+}
+
+// Reads a number from stdin, re-prompting until a full line is a valid
+// number. Exits cleanly if stdin is closed so the program never spins forever.
 template <typename T>
 T readNumber(const string &retryPrompt)
 {
     T value;
-    while (!(cin >> value))
-    {
-        if (cin.eof())
-        {
-            cout << "\nInput closed. Exiting.\n";
-            exit(0);
-        }
-        cin.clear();
-        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+    while (!parseNumber(readLine(), value))
         cout << retryPrompt;
-    }
-    cin.ignore(numeric_limits<streamsize>::max(), '\n');
     return value;
 }
 
@@ -39,32 +83,33 @@ public:
     string major;
     double gpa = 0.0;
 
+    static bool idExists(const vector<Student> &students, int id)
+    {
+        for (const auto &other : students)
+            if (other.id == id)
+                return true;
+        return false;
+    }
+
     void input(const vector<Student> &existing)
     {
         cout << "\n--- Enter Student Details ---\n";
 
         cout << "Enter ID (number): ";
         id = readNumber<int>("Invalid input! Enter numeric ID: ");
-        for (bool clash = true; clash;)
+        while (true)
         {
-            clash = false;
-            for (const auto &other : existing)
-                if (other.id == id)
-                    clash = true;
-            if (clash)
-                {
+            if (id <= 0)
+                cout << "ID must be a positive number: ";
+            else if (idExists(existing, id))
                 cout << "That ID already exists. Enter a different ID: ";
-                id = readNumber<int>("Invalid! Enter a number: ");
-            }
+            else
+                break;
+            id = readNumber<int>("Invalid! Enter a number: ");
         }
 
         cout << "Enter Name: ";
-        getline(cin, name);
-        while (name.empty() || name.find('|') != string::npos)
-        {
-            cout << "Name must be non-empty and cannot contain '|': ";
-            getline(cin, name);
-        }
+        name = readTextField("Name");
 
         cout << "Enter Age (number): ";
         age = readNumber<int>("Invalid! Enter numeric age: ");
@@ -75,12 +120,7 @@ public:
             }
 
         cout << "Enter Major: ";
-        getline(cin, major);
-        while (major.empty() || major.find('|') != string::npos)
-        {
-            cout << "Major must be non-empty and cannot contain '|': ";
-            getline(cin, major);
-        }
+        major = readTextField("Major");
 
         cout << "Enter GPA (number): ";
         gpa = readNumber<double>("Invalid! Enter numeric GPA: ");
@@ -91,13 +131,25 @@ public:
             }
     }
 
+    // Prints one table row. Long text is shortened with "..." so it can't
+    // push the following columns out of line, and the GPA is formatted in a
+    // local stream so cout's own number formatting is left untouched.
     void display() const
     {
+        ostringstream gpaText;
+        gpaText << fixed << setprecision(2) << gpa;
         cout << left << setw(6) << id
-             << setw(20) << name
+             << setw(20) << fitColumn(name, 19)
              << setw(6) << age
-             << setw(15) << major
-             << setw(6) << fixed << setprecision(2) << gpa << "\n";
+             << setw(15) << fitColumn(major, 14)
+             << gpaText.str() << "\n";
+    }
+
+    static string fitColumn(const string &text, size_t width)
+    {
+        if (text.size() <= width)
+            return text;
+        return text.substr(0, width - 3) + "...";
     }
 
     string toLine() const
@@ -108,8 +160,14 @@ public:
     }
 
     // Parses one "id|name|age|major|gpa" line; returns false if malformed.
-    static bool fromLine(const string &line, Student &s)
+    // Applies the same rules as interactive input, so a hand-edited file
+    // can't load records the menu would have refused (e.g. GPA 42, age "2x").
+    // A trailing '\r' from files saved on Windows is ignored.
+    static bool fromLine(const string &rawLine, Student &s)
     {
+        string line = rawLine;
+        if (!line.empty() && line.back() == '\r')
+            line.pop_back();
         stringstream ss(line);
         string part;
         vector<string> parts;
@@ -117,18 +175,19 @@ public:
             parts.push_back(part);
         if (parts.size() != 5)
             return false;
-        try
-        {
-            s.id = stoi(parts[0]);
-            s.name = parts[1];
-            s.age = stoi(parts[2]);
-            s.major = parts[3];
-            s.gpa = stod(parts[4]);
-        }
-        catch (...)
-        {
+
+        Student parsed;
+        parsed.name = trim(parts[1]);
+        parsed.major = trim(parts[3]);
+        if (!parseNumber(parts[0], parsed.id) || parsed.id <= 0)
             return false;
-        }
+        if (!parseNumber(parts[2], parsed.age) || parsed.age <= 0 || parsed.age > 120)
+            return false;
+        if (!parseNumber(parts[4], parsed.gpa) || parsed.gpa < 0.0 || parsed.gpa > 10.0)
+            return false;
+        if (parsed.name.empty() || parsed.major.empty())
+            return false;
+        s = parsed;
         return true;
     }
 };
@@ -145,21 +204,55 @@ class StudentManager
                 return i;
         return -1;
     }
+    static void printTableHeader()
+    {
+        cout << left << setw(6) << "ID"
+             << setw(20) << "Name"
+             << setw(6) << "Age"
+             << setw(15) << "Major"
+             << "GPA" << "\n";
+        cout << "---------------------------------------------------------------\n";
+    }
+
     // Rewrites students.txt from the in-memory list (one record per line,
     // fields separated by '|': id|name|age|major|gpa).
-    void saveAllToFile() const
+    // Writes to students.txt.tmp first and then renames it over the real
+    // file, so a failed or interrupted write can't leave a half-written file.
+    bool saveAllToFile() const
     {
-        ofstream out("students.txt", ios::trunc);
-        if (!out)
+        const char *tmpName = "students.txt.tmp";
         {
-            cout << "Error: cannot open students.txt for writing.\n";
-            return;
+            ofstream out(tmpName, ios::trunc);
+            if (!out)
+            {
+                cout << "Error: cannot open " << tmpName << " for writing.\n";
+                return false;
+            }
+            for (const auto &s : list)
+                out << s.toLine() << '\n';
+            out.flush();
+            if (!out)
+            {
+                cout << "Error: failed while writing student records.\n";
+                remove(tmpName);
+                return false;
+            }
         }
-        for (const auto &s : list)
-            out << s.toLine() << '\n';
+        // POSIX rename() replaces the target atomically. On Windows it fails
+        // if the target exists, so fall back to removing it and retrying.
+        if (rename(tmpName, "students.txt") != 0 &&
+            (remove("students.txt"), rename(tmpName, "students.txt") != 0))
+        {
+            cout << "Error: cannot replace students.txt (data kept in " << tmpName << ").\n";
+            return false;
+        }
+        return true;
     }
 
 public:
+    // Loads students.txt. Lines that are malformed or repeat an earlier ID
+    // are skipped with a warning; because the next save rewrites the file,
+    // the original is first copied to students.txt.bak so nothing is lost.
     void loadFromFile()
     {
         list.clear();
@@ -169,13 +262,34 @@ public:
             return;
         }
         string line;
+        vector<int> skipped;
+        int lineNo = 0;
         while (getline(in, line))
         {
-            if (line.empty())
+            ++lineNo;
+            if (trim(line).empty())
                 continue;
             Student s;
-            if (Student::fromLine(line, s))
+            if (Student::fromLine(line, s) && findIndex(s.id) == -1)
                 list.push_back(s);
+            else
+                skipped.push_back(lineNo);
+        }
+        in.close();
+
+        if (!skipped.empty())
+        {
+            cout << "Warning: skipped " << skipped.size()
+                 << " invalid or duplicate line(s) in students.txt (line numbers:";
+            for (int n : skipped)
+                cout << ' ' << n;
+            cout << ").\n";
+            ifstream src("students.txt", ios::binary);
+            ofstream bak("students.txt.bak", ios::binary | ios::trunc);
+            if (src && bak && (bak << src.rdbuf()))
+                cout << "The original file was copied to students.txt.bak.\n";
+            else
+                cout << "Warning: could not create students.txt.bak.\n";
         }
     }
 
@@ -185,15 +299,12 @@ public:
         s.input(list);
 
         list.push_back(s);
-
-        ofstream out("students.txt", ios::app);
-        if (!out)
-        {
-            cout << "Error: cannot open students.txt to append. Student added in memory only.\n";
-            return;
-        }
-        out << s.toLine() << '\n';
-        cout << "Student added and saved to file.\n";
+        // Rewrite the whole file rather than appending: appending to a file
+        // whose last line has no newline glues two records together.
+        if (saveAllToFile())
+            cout << "Student added and saved to file.\n";
+        else
+            cout << "Student added in memory only; it will be saved again on exit.\n";
     }
 
     void showAll() const
@@ -204,14 +315,10 @@ public:
             return;
         }
         cout << "\n--- Student Records ---\n";
-        cout << left << setw(6) << "ID"
-             << setw(20) << "Name"
-             << setw(6) << "Age"
-             << setw(15) << "Major"
-             << "GPA" << "\n";
-        cout << "---------------------------------------------------------------\n";
+        printTableHeader();
         for (const auto &s : list)
             s.display();
+        cout << list.size() << " record(s).\n";
     }
 
     void searchStudent() const
@@ -227,6 +334,7 @@ public:
         else
         {
             cout << "\n--- Student Found ---\n";
+            printTableHeader();
             list[idx].display();
         }
     }
@@ -256,6 +364,56 @@ public:
         cout << "Student deleted and file updated.\n";
     }
 
+    // Edits an existing record. Pressing Enter at a prompt keeps the current
+    // value; anything typed goes through the same validation as Add.
+    void updateStudent()
+    {
+        cout << "Enter ID to update: ";
+        int id = readNumber<int>("Invalid! Enter numeric ID: ");
+
+        int idx = findIndex(id);
+        if (idx == -1)
+        {
+            cout << "Student not found.\n";
+            return;
+        }
+        Student updated = list[idx];
+        cout << "Press Enter to keep the current value.\n";
+
+        string text;
+        cout << "Name [" << updated.name << "]: ";
+        while (!(text = trim(readLine())).empty() && text.find('|') != string::npos)
+            cout << "Name cannot contain '|': ";
+        if (!text.empty())
+            updated.name = text;
+
+        cout << "Age [" << updated.age << "]: ";
+        while (!(text = trim(readLine())).empty() &&
+               (!parseNumber(text, updated.age) || updated.age <= 0 || updated.age > 120))
+        {
+            updated.age = list[idx].age;
+            cout << "Age must be a number between 1 and 120: ";
+        }
+
+        cout << "Major [" << updated.major << "]: ";
+        while (!(text = trim(readLine())).empty() && text.find('|') != string::npos)
+            cout << "Major cannot contain '|': ";
+        if (!text.empty())
+            updated.major = text;
+
+        cout << "GPA [" << updated.gpa << "]: ";
+        while (!(text = trim(readLine())).empty() &&
+               (!parseNumber(text, updated.gpa) || updated.gpa < 0.0 || updated.gpa > 10.0))
+        {
+            updated.gpa = list[idx].gpa;
+            cout << "GPA must be a number between 0 and 10: ";
+        }
+
+        list[idx] = updated;
+        if (saveAllToFile())
+            cout << "Student updated and file saved.\n";
+    }
+
     void saveOnExit() const
     {
         saveAllToFile();
@@ -274,24 +432,23 @@ int main()
         cout << "2. Show All Students\n";
         cout << "3. Search Student\n";
         cout << "4. Delete Student\n";
-        cout << "5. Exit\n";
+        cout << "5. Update Student\n";
+        cout << "6. Exit\n";
         cout << "Choose option: ";
 
-        int ch;
-        if (!(cin >> ch))
+        string choice;
+        if (!getline(cin, choice))
         {
-            if (cin.eof())
-            {
-                M.saveOnExit();
-                cout << "\nInput closed. Saved and exiting.\n";
-                return 0;
-            }
-            cin.clear();
-            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            M.saveOnExit();
+            cout << "\nInput closed. Saved and exiting.\n";
+            return 0;
+        }
+        int ch = 0;
+        if (!parseNumber(choice, ch))
+        {
             cout << "Invalid choice!\n";
             continue;
         }
-        cin.ignore(numeric_limits<streamsize>::max(), '\n');
 
         switch (ch)
         {
@@ -308,6 +465,9 @@ int main()
             M.deleteStudent();
             break;
         case 5:
+            M.updateStudent();
+            break;
+        case 6:
             M.saveOnExit();
             cout << "Saved and exiting.\n";
             return 0;

@@ -6,3 +6,5 @@ SRMS
 
 # Runtime data created by the app
 students.txt
+students.txt.bak
+students.txt.tmp
