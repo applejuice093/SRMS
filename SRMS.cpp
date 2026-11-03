@@ -22,6 +22,30 @@ string readLine()
     return line;
 }
 
+// Returns `text` without leading or trailing spaces, tabs or CR/LF.
+string trim(const string &text)
+{
+    const char *space = " \t\r\n";
+    size_t start = text.find_first_not_of(space);
+    if (start == string::npos)
+        return "";
+    size_t end = text.find_last_not_of(space);
+    return text.substr(start, end - start + 1);
+}
+
+// Reads a non-empty text field that is safe to store in the '|'-separated
+// file. Surrounding whitespace is trimmed so "  Asha  " is saved as "Asha".
+string readTextField(const string &fieldName)
+{
+    string value = trim(readLine());
+    while (value.empty() || value.find('|') != string::npos)
+    {
+        cout << fieldName << " must be non-empty and cannot contain '|': ";
+        value = trim(readLine());
+    }
+    return value;
+}
+
 // Parses the whole of `text` as a T, allowing surrounding spaces only.
 // "12abc", "1.5" (for an int) and "" are rejected instead of half-read.
 template <typename T>
@@ -78,12 +102,7 @@ public:
         }
 
         cout << "Enter Name: ";
-        name = readLine();
-        while (name.empty() || name.find('|') != string::npos)
-        {
-            cout << "Name must be non-empty and cannot contain '|': ";
-            name = readLine();
-        }
+        name = readTextField("Name");
 
         cout << "Enter Age (number): ";
         age = readNumber<int>("Invalid! Enter numeric age: ");
@@ -94,12 +113,7 @@ public:
             }
 
         cout << "Enter Major: ";
-        major = readLine();
-        while (major.empty() || major.find('|') != string::npos)
-        {
-            cout << "Major must be non-empty and cannot contain '|': ";
-            major = readLine();
-        }
+        major = readTextField("Major");
 
         cout << "Enter GPA (number): ";
         gpa = readNumber<double>("Invalid! Enter numeric GPA: ");
