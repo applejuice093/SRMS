@@ -364,6 +364,56 @@ public:
         cout << "Student deleted and file updated.\n";
     }
 
+    // Edits an existing record. Pressing Enter at a prompt keeps the current
+    // value; anything typed goes through the same validation as Add.
+    void updateStudent()
+    {
+        cout << "Enter ID to update: ";
+        int id = readNumber<int>("Invalid! Enter numeric ID: ");
+
+        int idx = findIndex(id);
+        if (idx == -1)
+        {
+            cout << "Student not found.\n";
+            return;
+        }
+        Student updated = list[idx];
+        cout << "Press Enter to keep the current value.\n";
+
+        string text;
+        cout << "Name [" << updated.name << "]: ";
+        while (!(text = trim(readLine())).empty() && text.find('|') != string::npos)
+            cout << "Name cannot contain '|': ";
+        if (!text.empty())
+            updated.name = text;
+
+        cout << "Age [" << updated.age << "]: ";
+        while (!(text = trim(readLine())).empty() &&
+               (!parseNumber(text, updated.age) || updated.age <= 0 || updated.age > 120))
+        {
+            updated.age = list[idx].age;
+            cout << "Age must be a number between 1 and 120: ";
+        }
+
+        cout << "Major [" << updated.major << "]: ";
+        while (!(text = trim(readLine())).empty() && text.find('|') != string::npos)
+            cout << "Major cannot contain '|': ";
+        if (!text.empty())
+            updated.major = text;
+
+        cout << "GPA [" << updated.gpa << "]: ";
+        while (!(text = trim(readLine())).empty() &&
+               (!parseNumber(text, updated.gpa) || updated.gpa < 0.0 || updated.gpa > 10.0))
+        {
+            updated.gpa = list[idx].gpa;
+            cout << "GPA must be a number between 0 and 10: ";
+        }
+
+        list[idx] = updated;
+        if (saveAllToFile())
+            cout << "Student updated and file saved.\n";
+    }
+
     void saveOnExit() const
     {
         saveAllToFile();
@@ -382,7 +432,8 @@ int main()
         cout << "2. Show All Students\n";
         cout << "3. Search Student\n";
         cout << "4. Delete Student\n";
-        cout << "5. Exit\n";
+        cout << "5. Update Student\n";
+        cout << "6. Exit\n";
         cout << "Choose option: ";
 
         string choice;
@@ -414,6 +465,9 @@ int main()
             M.deleteStudent();
             break;
         case 5:
+            M.updateStudent();
+            break;
+        case 6:
             M.saveOnExit();
             cout << "Saved and exiting.\n";
             return 0;

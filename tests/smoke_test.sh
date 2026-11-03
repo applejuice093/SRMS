@@ -6,7 +6,7 @@ WORK="$(mktemp -d)"; trap 'rm -rf "$WORK"' EXIT
 cd "$WORK"
 
 # Add two students, try a duplicate ID, search, delete one, exit.
-printf '1\n101\nAsha Rao\n20\nCS\n8.7\n1\n102\nRavi|K\nRavi K\n21\nEE\n11\n7.9\n1\n101\n103\nMeera\n19\nME\n9.1\n3\n102\n4\n101\ny\n5\n' \
+printf '1\n101\nAsha Rao\n20\nCS\n8.7\n1\n102\nRavi|K\nRavi K\n21\nEE\n11\n7.9\n1\n101\n103\nMeera\n19\nME\n9.1\n3\n102\n4\n101\ny\n6\n' \
   | "$BIN" > out.txt
 
 grep -q "Student Found" out.txt
