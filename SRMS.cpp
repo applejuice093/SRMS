@@ -193,16 +193,17 @@ class StudentManager
     }
     // Rewrites students.txt from the in-memory list (one record per line,
     // fields separated by '|': id|name|age|major|gpa).
-    void saveAllToFile() const
+    bool saveAllToFile() const
     {
         ofstream out("students.txt", ios::trunc);
         if (!out)
         {
             cout << "Error: cannot open students.txt for writing.\n";
-            return;
+            return false;
         }
         for (const auto &s : list)
             out << s.toLine() << '\n';
+        return true;
     }
 
 public:
@@ -255,15 +256,12 @@ public:
         s.input(list);
 
         list.push_back(s);
-
-        ofstream out("students.txt", ios::app);
-        if (!out)
-        {
-            cout << "Error: cannot open students.txt to append. Student added in memory only.\n";
-            return;
-        }
-        out << s.toLine() << '\n';
-        cout << "Student added and saved to file.\n";
+        // Rewrite the whole file rather than appending: appending to a file
+        // whose last line has no newline glues two records together.
+        if (saveAllToFile())
+            cout << "Student added and saved to file.\n";
+        else
+            cout << "Student added in memory only; it will be saved again on exit.\n";
     }
 
     void showAll() const
