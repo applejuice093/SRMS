@@ -22,24 +22,30 @@ string readLine()
     return line;
 }
 
-// Reads a number from stdin, re-prompting until the input is valid.
-// Exits cleanly if stdin is closed so the program never spins forever.
+// Parses the whole of `text` as a T, allowing surrounding spaces only.
+// "12abc", "1.5" (for an int) and "" are rejected instead of half-read.
+template <typename T>
+bool parseNumber(const string &text, T &value)
+{
+    istringstream iss(text);
+    T parsed;
+    if (!(iss >> parsed))
+        return false;
+    iss >> ws;
+    if (!iss.eof())
+        return false;
+    value = parsed;
+    return true;
+}
+
+// Reads a number from stdin, re-prompting until a full line is a valid
+// number. Exits cleanly if stdin is closed so the program never spins forever.
 template <typename T>
 T readNumber(const string &retryPrompt)
 {
     T value;
-    while (!(cin >> value))
-    {
-        if (cin.eof())
-        {
-            cout << "\nInput closed. Exiting.\n";
-            exit(0);
-        }
-        cin.clear();
-        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+    while (!parseNumber(readLine(), value))
         cout << retryPrompt;
-    }
-    cin.ignore(numeric_limits<streamsize>::max(), '\n');
     return value;
 }
 
