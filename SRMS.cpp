@@ -131,13 +131,25 @@ public:
             }
     }
 
+    // Prints one table row. Long text is shortened with "..." so it can't
+    // push the following columns out of line, and the GPA is formatted in a
+    // local stream so cout's own number formatting is left untouched.
     void display() const
     {
+        ostringstream gpaText;
+        gpaText << fixed << setprecision(2) << gpa;
         cout << left << setw(6) << id
-             << setw(20) << name
+             << setw(20) << fitColumn(name, 19)
              << setw(6) << age
-             << setw(15) << major
-             << setw(6) << fixed << setprecision(2) << gpa << "\n";
+             << setw(15) << fitColumn(major, 14)
+             << gpaText.str() << "\n";
+    }
+
+    static string fitColumn(const string &text, size_t width)
+    {
+        if (text.size() <= width)
+            return text;
+        return text.substr(0, width - 3) + "...";
     }
 
     string toLine() const
@@ -301,6 +313,7 @@ public:
         cout << "---------------------------------------------------------------\n";
         for (const auto &s : list)
             s.display();
+        cout << list.size() << " record(s).\n";
     }
 
     void searchStudent() const
