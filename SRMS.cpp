@@ -6,6 +6,7 @@
 #include <sstream>
 #include <limits>
 #include <cstdlib>
+#include <cstdio>
 
 using namespace std;
 
@@ -193,16 +194,36 @@ class StudentManager
     }
     // Rewrites students.txt from the in-memory list (one record per line,
     // fields separated by '|': id|name|age|major|gpa).
+    // Writes to students.txt.tmp first and then renames it over the real
+    // file, so a failed or interrupted write can't leave a half-written file.
     bool saveAllToFile() const
     {
-        ofstream out("students.txt", ios::trunc);
-        if (!out)
+        const char *tmpName = "students.txt.tmp";
         {
-            cout << "Error: cannot open students.txt for writing.\n";
+            ofstream out(tmpName, ios::trunc);
+            if (!out)
+            {
+                cout << "Error: cannot open " << tmpName << " for writing.\n";
+                return false;
+            }
+            for (const auto &s : list)
+                out << s.toLine() << '\n';
+            out.flush();
+            if (!out)
+            {
+                cout << "Error: failed while writing student records.\n";
+                remove(tmpName);
+                return false;
+            }
+        }
+        // POSIX rename() replaces the target atomically. On Windows it fails
+        // if the target exists, so fall back to removing it and retrying.
+        if (rename(tmpName, "students.txt") != 0 &&
+            (remove("students.txt"), rename(tmpName, "students.txt") != 0))
+        {
+            cout << "Error: cannot replace students.txt (data kept in " << tmpName << ").\n";
             return false;
         }
-        for (const auto &s : list)
-            out << s.toLine() << '\n';
         return true;
     }
 
