@@ -82,23 +82,29 @@ public:
     string major;
     double gpa = 0.0;
 
+    static bool idExists(const vector<Student> &students, int id)
+    {
+        for (const auto &other : students)
+            if (other.id == id)
+                return true;
+        return false;
+    }
+
     void input(const vector<Student> &existing)
     {
         cout << "\n--- Enter Student Details ---\n";
 
         cout << "Enter ID (number): ";
         id = readNumber<int>("Invalid input! Enter numeric ID: ");
-        for (bool clash = true; clash;)
+        while (true)
         {
-            clash = false;
-            for (const auto &other : existing)
-                if (other.id == id)
-                    clash = true;
-            if (clash)
-                {
+            if (id <= 0)
+                cout << "ID must be a positive number: ";
+            else if (idExists(existing, id))
                 cout << "That ID already exists. Enter a different ID: ";
-                id = readNumber<int>("Invalid! Enter a number: ");
-            }
+            else
+                break;
+            id = readNumber<int>("Invalid! Enter a number: ");
         }
 
         cout << "Enter Name: ";
